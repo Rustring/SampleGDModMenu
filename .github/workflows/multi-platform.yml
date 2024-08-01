@@ -68,7 +68,7 @@ jobs:
         id: get_latest_release
         run: echo ::set-output name=tag::$(curl -s https://api.github.com/repos/Prevter/OpenHack/releases/latest | jq -r .tag_name)
 
-      - name: Create nightly release
+      - name: Create dev release
         uses: andelf/nightly-release@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
