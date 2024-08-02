@@ -41,7 +41,7 @@ jobs:
         with:
           bindings: EclipseMenu/bindings
           bindings-ref: main
-          # sdk: nightly
+          # sdk: nightly 
           combine: true
           export-pdb: true
           target: ${{ matrix.config.target }}
@@ -58,17 +58,40 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Build Output
+          name: Geode Build
           path: ${{ steps.build.outputs.build-output }}
 
-      - name: Check if has nightly webhook
-        id: check
-        run: echo "::set-output name=has-nightly-webhook::${{ secrets.NIGHTLY_WEBHOOK != '' }}"
-
-      - name: Upload release to Discord
-        uses: tsickert/discord-webhook@v5.3.0
-        if: ${{ steps.check.outputs.has-nightly-webhook == 'true' }}
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
         with:
-          webhook-url: ${{ secrets.NIGHTLY_WEBHOOK }}
-          filename: ${{ steps.build.outputs.build-output }}/eclipse.eclipse-menu.geode
-          content: "New nightly build for commit [${{ github.sha }}](https://github.com/EclipseMenu/EclipseMenu/commit/${{ github.sha }})!"
+          path: ${{ github.workspace }}/bin
+          merge-multiple: true
+
+      - name: Get latest release tag
+        id: get_latest_release
+        run: echo ::set-output name=tag::$(curl -s https://api.github.com/repos/Prevter/OpenHack/releases/latest | jq -r .tag_name)
+
+      - name: Create dev release
+        uses: andelf/nightly-release@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: dev
+          name: 'Development Release'
+          body: |
+            This is a dev build of the mod for commit ${{ github.sha }} (${{ github.event.head_commit.message }}).
+            
+            ## IMPORTANT NOTICE FOR PEOPLE:
+            
+            Whatever you do, DO NOT download this expecting support, this may not be stable and may contain lots of bugs and issues.
+            This release is only meant for my own convenience, still if you want to download this keep in mind that NO support will be available, neither from me, nor the developers of the mod.
+
+            ## Supported Platforms Of This Build:
+
+            1. Windows
+            2. Android
+            3. MacOS
+          files: |
+            ${{ github.workspace }}/bin/eclipse.eclipse-menu.geode
+
+          
