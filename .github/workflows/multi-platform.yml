@@ -76,10 +76,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: dev
-          name: 'Development Release'
+          tag_name: dev-vanilla
+          name: 'Development Release (Vanilla Eclipse)'
           body: |
             This is a dev build of the mod for commit ${{ github.sha }} (${{ github.event.head_commit.message }}).
+            No changes are made to the original source code of EclipseMenu.
             
             ## IMPORTANT NOTICE FOR PEOPLE:
             
