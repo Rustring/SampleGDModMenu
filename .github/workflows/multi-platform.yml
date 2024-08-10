@@ -19,8 +19,8 @@ jobs:
           os: windows-latest
           build-type: RelWithDebInfo
 
-        - name: macOS
-          os: macos-latest
+        # - name: macOS
+        #  os: macos-latest
 
         - name: Android32
           os: ubuntu-latest
@@ -91,7 +91,6 @@ jobs:
 
             1. Windows
             2. Android
-            3. MacOS
           files: |
             ${{ github.workspace }}/bin/eclipse.eclipse-menu.geode
 
