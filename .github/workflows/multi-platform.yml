@@ -92,7 +92,7 @@ jobs:
 
             1. Windows
             2. Android
-            3. MacOS Comming Soon
+            3. MacOS Cumming Soon
           files: |
             ${{ github.workspace }}/bin/eclipse.eclipse-menu.geode
 
