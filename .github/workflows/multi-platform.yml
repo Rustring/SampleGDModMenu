@@ -71,26 +71,28 @@ jobs:
         id: get_latest_release
         run: echo ::set-output name=tag::$(curl -s https://api.github.com/repos/Prevter/OpenHack/releases/latest | jq -r .tag_name)
 
-      - name: Create dev release
+      - name: Create rolling release
         uses: andelf/nightly-release@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: dev-vanilla
-          name: 'Development Release (Vanilla Eclipse)'
+          tag_name: stable-rolling
+          prerelease: false
+          name: 'Stable Rolling Release'
           body: |
-            This is a dev build of the mod for commit ${{ github.sha }} (${{ github.event.head_commit.message }}).
-            No changes are made to the original source code of EclipseMenu.
+            This is a stable build of the mod for commit ${{ github.sha }} (${{ github.event.head_commit.message }}).
             
             ## IMPORTANT NOTICE FOR PEOPLE:
             
-            Whatever you do, DO NOT download this expecting support, this may not be stable and may contain lots of bugs and issues.
-            This release is only meant for my own convenience, still if you want to download this keep in mind that NO support will be available, neither from me, nor the developers of the mod.
+            Whatever you do, DO NOT download this expecting support from the Eclipse devs.
+            This is my own modification of Eclipse and is not affiliated nor endorsed by the project.
+            I will only provide support for my own changes, not any changes made by the Eclipse devs.
 
             ## Supported Platforms Of This Build:
 
             1. Windows
             2. Android
+            3. MacOS Comming Soon
           files: |
             ${{ github.workspace }}/bin/eclipse.eclipse-menu.geode
 
