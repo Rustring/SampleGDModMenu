@@ -8,7 +8,7 @@
 	},
 	"version": "v1.0.0",
 	"id": "eclipse.eclipse-menu",
-	"name": "Eclipse",
+	"name": "Eclipse Modified Build",
 	"links": {
 		"source": "https://github.com/EclipseMenu/EclipseMenu"
 	},
