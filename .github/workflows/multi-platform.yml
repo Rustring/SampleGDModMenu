@@ -95,5 +95,6 @@ jobs:
             3. MacOS
           files: |
             ${{ github.workspace }}/bin/eclipse.eclipse-menu.geode
+            ${{ github.workspace }}/bin/eclipse.eclipse-menu.pdb
 
           
