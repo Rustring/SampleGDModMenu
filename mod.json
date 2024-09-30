@@ -7,16 +7,21 @@
 		"ios": "2.206"
 	},
 	"version": "v1.0.0-alpha.1",
-	"id": "eclipse.eclipse-menu",
-	"name": "Eclipse",
+	"id": "rustring.eclipse-modification",
+	"name": "Eclipse Modification",
 	"links": {
-		"source": "https://github.com/EclipseMenu/EclipseMenu"
+		"source": "https://github.com/Rustring/EclipseMenu-Modification"
 	},
 	"tags": ["cheats", "gameplay", "utility", "customization", "interface"],
 	"developers": ["Eclipse Team", "ninXout", "Prevter", "maxnu", "Firee", "SpaghettDev"],
 	"description": "A next-generation mod menu for Geometry Dash.",
 	"early-load": true,
 	"incompatibilities": [
+		{
+			"id": "eclipse.eclipse-menu",
+			"version": "*",
+			"importance": "superseded"
+		},
 		{
 			"id": "prevter.openhack",
 			"version": "*",
