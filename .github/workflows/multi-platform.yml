@@ -58,7 +58,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Geode Build
+          name: Eclipse Build
           path: ${{ steps.build.outputs.build-output }}
 
       - name: Download artifacts
@@ -67,17 +67,13 @@ jobs:
           path: ${{ github.workspace }}/bin
           merge-multiple: true
 
-      - name: Get latest release tag
-        id: get_latest_release
-        run: echo ::set-output name=tag::$(curl -s https://api.github.com/repos/Prevter/OpenHack/releases/latest | jq -r .tag_name)
-
       - name: Create dev release
         uses: andelf/nightly-release@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: dev-vanilla
-          name: 'Development Release (Vanilla Eclipse)'
+          name: 'Developer Release W/O Any Changes'
           body: |
             This is a dev build of the mod for commit ${{ github.sha }} (${{ github.event.head_commit.message }}).
             No changes are made to the original source code of EclipseMenu.
