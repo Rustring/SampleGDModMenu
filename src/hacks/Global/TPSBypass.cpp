@@ -4,6 +4,7 @@
 
 #include <Geode/modify/GJBaseGameLayer.hpp>
 
+#ifndef GEODE_IS_MACOS
 constexpr float MIN_TPS = 0.f;
 constexpr float MAX_TPS = 100000.f;
 
@@ -46,3 +47,4 @@ namespace eclipse::hacks::Global {
     };
 
 }
+#endif

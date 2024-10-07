@@ -10,6 +10,7 @@
 #include <functional>
 #include <memory>
 #include "color.hpp"
+#include "popup.hpp"
 
 namespace eclipse::gui {
 
@@ -20,7 +21,7 @@ namespace eclipse::gui {
         Label, Toggle, RadioButton,
         Combo, Slider, InputFloat, InputInt,
         FloatToggle, InputText, Color,
-        Button, Keybind, LabelSettings
+        Button, Keybind, LabelSettings, FilesystemCombo
     };
 
     class Component {
@@ -231,6 +232,69 @@ namespace eclipse::gui {
         int m_value;
         std::vector<std::string> m_items;
         std::function<void(int)> m_callback;
+    };
+
+    /// @brief Combo component for selecting entries from a path.
+    class FilesystemComboComponent : public Component {
+    public:
+        explicit FilesystemComboComponent(std::string id, std::string title, std::filesystem::path directory)
+            : m_id(std::move(id)), m_title(std::move(title)), m_directory(std::move(directory)) {
+            m_type = ComponentType::FilesystemCombo;
+        }
+
+        void onInit() override {
+            globFiles();
+
+            if(getValue().empty() && m_items.size() > 0)
+                setValue(0);
+        }
+        void onUpdate() override {
+            globFiles();
+        }
+
+        /// @brief Set a callback function to be called when the component value changes.
+        FilesystemComboComponent* callback(const std::function<void(int)>& func) { 
+            m_callback = func; 
+            return this;
+        }
+
+        /// @brief Get the combo value.
+        [[nodiscard]] std::filesystem::path getValue() const;
+
+        /// @brief Get the combo items.
+        [[nodiscard]] const std::vector<std::filesystem::path>& getItems() const { return m_items; }
+
+        /// @brief Set the combo value.
+        void setValue(std::filesystem::path path) const;
+
+        /// @brief Set the combo value.
+        void setValue(int index);
+
+        [[nodiscard]] const std::string& getId() const override { return m_id; }
+        [[nodiscard]] const std::string& getTitle() const override { return m_title; }
+
+        [[nodiscard]] std::string* getSearchBuffer() { return &m_searchBuffer; }
+
+        FilesystemComboComponent* setDescription(std::string description) override {
+            m_description = std::move(description);
+            return this;
+        }
+
+        void triggerCallback(int value) const {
+            if (m_callback) m_callback(value);
+        }
+
+    private:
+        void globFiles();
+
+    private:
+        std::string m_id;
+        std::string m_title;
+        std::filesystem::path m_directory;
+        std::vector<std::filesystem::path> m_items;
+        std::function<void(int)> m_callback;
+
+        std::string m_searchBuffer;
     };
 
     /// @brief Slider component to select a value from a range.
@@ -657,9 +721,16 @@ namespace eclipse::gui {
             return button;
         }
 
-        /// @brief Add a radio button to the tab.
+        /// @brief Add a combo to the tab.
         std::shared_ptr<ComboComponent> addCombo(const std::string& title, const std::string& id, std::vector<std::string> items, int value) {
             auto combo = std::make_shared<ComboComponent>(id, title, items, value);
+            addComponent(combo);
+            return combo;
+        }
+
+        /// @brief Add a filesystem combo button to the tab.
+        std::shared_ptr<FilesystemComboComponent> addFilesystemCombo(const std::string& title, const std::string& id, std::filesystem::path directory) {
+            auto combo = std::make_shared<FilesystemComboComponent>(id, title, directory);
             addComponent(combo);
             return combo;
         }
@@ -765,6 +836,9 @@ namespace eclipse::gui {
 
         /// @brief [Implementation specific] Calls the function after the main render loop
         virtual void queueAfterDrawing(const std::function<void()>& func) = 0;
+
+        /// @brief Opens a modal popup with provided configuration.
+        virtual void showPopup(const Popup& popup) = 0;
     };
 
     using Tabs = std::vector<std::shared_ptr<MenuTab>>;
@@ -797,6 +871,10 @@ namespace eclipse::gui {
             if (auto renderer = get()->m_renderer)
                 renderer->queueAfterDrawing(func);
             else func(); // fallback
+        }
+
+        void showPopup(const Popup& popup) const {
+            if (m_renderer) m_renderer->showPopup(popup);
         }
 
         [[nodiscard]] const Tabs& getTabs() const { return m_tabs; }

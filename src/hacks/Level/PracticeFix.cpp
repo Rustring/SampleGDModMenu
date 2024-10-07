@@ -278,6 +278,9 @@ namespace eclipse::Hacks::Level {
             m_ignoreDamage = player->m_ignoreDamage;
             m_enable22Changes = player->m_enable22Changes;
 
+            for(int i = 0; i < player->m_touchingRings->count(); i++)
+                m_touchingRings.push_back(player->m_touchingRings->objectAtIndex(i));
+
             m_position = player->m_position;
             m_rotation = player->getRotation();
 
@@ -298,6 +301,8 @@ namespace eclipse::Hacks::Level {
         }
 
         void apply(PlayerObject* player) {
+            if (!PlayLayer::get()->m_isPracticeMode) return;
+
             player->m_wasTeleported = m_wasTeleported;
             player->m_fixGravityBug = m_fixGravityBug;
             player->m_reverseSync = m_reverseSync;
@@ -538,6 +543,10 @@ namespace eclipse::Hacks::Level {
             player->m_item20 = m_item20;
             player->m_ignoreDamage = m_ignoreDamage;
             player->m_enable22Changes = m_enable22Changes;
+            player->m_touchingRings->removeAllObjects();
+
+            for(CCObject* obj : m_touchingRings)
+                player->m_touchingRings->addObject(obj);
 
             player->m_position = m_position;
             player->setPosition(m_position);
@@ -558,6 +567,7 @@ namespace eclipse::Hacks::Level {
 
     private:
         cocos2d::CCPoint m_position;
+        std::vector<CCObject*> m_touchingRings;
         float m_rotation;
 
         bool m_wasTeleported;

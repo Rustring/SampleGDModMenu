@@ -3,6 +3,7 @@
 #include <modules/config/config.hpp>
 #include <modules/hack/hack.hpp>
 #include <modules/gui/gui.hpp>
+#include <modules/gui/imgui/imgui.hpp>
 
 #ifdef GEODE_IS_WINDOWS
 #include <Geode/modify/CCEGLView.hpp>
@@ -405,21 +406,21 @@ namespace eclipse::keybinds {
             if (keybind.getId() == id) {
                 keybind.setInitialized(state);
                 config::set(fmt::format("keybind.{}.active", id), state);
-
-                gui::Engine::queueAfterDrawing([id, state, keybind] {
+                auto idStr = std::string(id);
+                gui::Engine::queueAfterDrawing([idStr, state, keybind] {
                     auto tab = gui::MenuTab::find("Keybinds");
                     if (state) {
                         // Add the keybind to the GUI
-                        auto keybindComponent = tab->addKeybind(keybind.getTitle(), fmt::format("keybind.{}.key", id), true);
-                        keybindComponent->callback([tab, keybindComponent, id](Keys key) {
-                            auto keybind = Manager::get()->getKeybind(id);
+                        auto keybindComponent = tab->addKeybind(keybind.getTitle(), fmt::format("keybind.{}.key", idStr), true);
+                        keybindComponent->callback([tab, keybindComponent, idStr](Keys key) {
+                            auto keybind = Manager::get()->getKeybind(idStr);
 
                             if (!keybind.has_value()) return;
 
                             auto& keybindRef = keybind->get();
 
                             if (key == Keys::None) {
-                                config::set(fmt::format("keybind.{}.active", id), false);
+                                config::set(fmt::format("keybind.{}.active", idStr), false);
                                 keybindRef.setInitialized(false);
                                 tab->removeComponent(keybindComponent);
                             }
@@ -427,13 +428,13 @@ namespace eclipse::keybinds {
                             keybindRef.setKey(key);
                         });
 
-                        s_keybindComponents[std::string(id)] = keybindComponent;
+                        s_keybindComponents[idStr] = keybindComponent;
                     } else {
                         // Reset the keybind to None
-                        config::set(fmt::format("keybind.{}.key", id), Keys::None);
+                        config::set(fmt::format("keybind.{}.key", idStr), Keys::None);
 
                         // Remove the keybind from the GUI
-                        if (auto keybindComponent = s_keybindComponents[std::string(id)]; keybindComponent) {
+                        if (auto keybindComponent = s_keybindComponents[idStr]; keybindComponent) {
                             tab->removeComponent(keybindComponent);
                         }
                     }
@@ -448,14 +449,19 @@ namespace eclipse::keybinds {
     }
 
     void Manager::registerKeyPress(Keys key) {
+        auto menuToggle = getKeybind("menu.toggle");
         m_keyStates[key] = true;
 
-        if (config::get<bool>("keybind.in-game-only", false) && !PlayLayer::get()) {
-            // only check if this is the menu toggle keybind
-            if (auto keybind = getKeybind("menu.toggle"); keybind.has_value() && keybind->get().getKey() == key)
-                keybind->get().execute();
+        if (menuToggle && key == menuToggle.value().get().getKey()) {
+            menuToggle.value().get().execute();
             return;
         }
+
+        if (gui::imgui::ImGuiRenderer::get() && ImGui::GetIO().WantTextInput)
+            return;
+
+        if (config::get<bool>("keybind.in-game-only", false) && !PlayLayer::get())
+            return;
 
         for (auto& keybind : m_keybinds) {
             if (keybind.getKey() == key && keybind.isInitialized())

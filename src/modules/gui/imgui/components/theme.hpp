@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <Geode/platform/platform.hpp>
 
 namespace eclipse::gui {
     class Component;
@@ -10,6 +11,7 @@ namespace eclipse::gui {
     class ToggleComponent;
     class RadioButtonComponent;
     class ComboComponent;
+    class FilesystemComboComponent;
     class SliderComponent;
     class InputFloatComponent;
     class InputIntComponent;
@@ -22,6 +24,16 @@ namespace eclipse::gui {
 }
 
 namespace eclipse::gui::imgui {
+
+    constexpr float DEFAULT_SCALE = 1.0f GEODE_ANDROID(* 1.42f);
+    constexpr float INV_DEFAULT_SCALE = 1.0f / DEFAULT_SCALE;
+
+    extern std::vector<std::string> THEME_NAMES;
+    enum class ComponentTheme {
+        ImGui, /// Classic Dear ImGui look
+        MegaHack, /// MegaHack v8 style
+        MegaOverlay, /// GDMegaOverlay style
+    };
 
     class Theme {
     public:
@@ -51,6 +63,7 @@ namespace eclipse::gui::imgui {
         virtual void visitToggle(const std::shared_ptr<ToggleComponent>& toggle) const;
         virtual void visitRadioButton(const std::shared_ptr<RadioButtonComponent>& radio) const;
         virtual void visitCombo(const std::shared_ptr<ComboComponent>& combo) const;
+        virtual void visitFilesystemCombo(const std::shared_ptr<FilesystemComboComponent>& combo) const;
         virtual void visitSlider(const std::shared_ptr<SliderComponent>& slider) const;
         virtual void visitInputFloat(const std::shared_ptr<InputFloatComponent>& inputFloat) const;
         virtual void visitInputInt(const std::shared_ptr<InputIntComponent>& inputInt) const;
@@ -74,12 +87,8 @@ namespace eclipse::gui::imgui {
             const std::string& popupId = "" // empty = use default
         ) const;
         virtual bool button(const std::string& text) const;
-    };
 
-    extern std::vector<std::string> THEME_NAMES;
-    enum class ComponentTheme {
-        ImGui, /// Classic Dear ImGui look
-        MegaHack, /// MegaHack v8 style
+        virtual ComponentTheme getTheme() const { return ComponentTheme::ImGui; }
     };
 
 }

@@ -46,7 +46,7 @@ namespace eclipse::gui::imgui {
     public:
         static std::shared_ptr<ImGuiRenderer> get() {
             auto engine = Engine::get();
-            if (engine->getRendererType() != RendererType::ImGui) return nullptr;
+            if (!engine->isInitialized() || engine->getRendererType() != RendererType::ImGui) return nullptr;
             return std::static_pointer_cast<ImGuiRenderer>(engine->getRenderer());
         }
 
@@ -55,6 +55,7 @@ namespace eclipse::gui::imgui {
         [[nodiscard]] bool isToggled() const override;
         void shutdown() override;
         void queueAfterDrawing(const std::function<void()>& func) override;
+        void showPopup(const Popup &popup) override;
 
     public:
         void draw();
@@ -64,11 +65,13 @@ namespace eclipse::gui::imgui {
         void visitComponent(const std::shared_ptr<Component>& component) const;
         bool beginWindow(const std::string& title) const;
         void endWindow() const;
+        void reload() const;
 
         FontManager& getFontManager() { return m_fontManager; }
 
     private:
         void drawFinished();
+        void renderPopups();
 
         static bool s_initialized;
         bool m_isOpened = false;
@@ -81,6 +84,7 @@ namespace eclipse::gui::imgui {
         bool m_insideDraw = false;
         LayoutMode m_queuedMode = LayoutMode::Tabbed;
         std::vector<std::function<void()>> m_runAfterDrawingQueue;
+        std::vector<Popup> m_popups;
     };
 
 }

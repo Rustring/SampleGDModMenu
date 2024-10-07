@@ -24,7 +24,7 @@ static void toggleMenu() {
 class $modify(EclipseButtonMLHook, MenuLayer) {
     bool init() override {
         if (!MenuLayer::init()) return false;
-
+/*
         {
             auto menu = this->getChildByID("bottom-menu");
             auto rendererSwitchButton = CCMenuItemSpriteExtra::create(
@@ -35,7 +35,7 @@ class $modify(EclipseButtonMLHook, MenuLayer) {
             menu->addChild(rendererSwitchButton);
             menu->updateLayout();
         }
-
+*/
         if (s_isInitialized) return true;
 
         geode::log::info("Eclipse Menu commit hash: {}", GIT_HASH);
@@ -126,11 +126,23 @@ $on_mod(Loaded) {
 
     // Compile blur shader
     gui::blur::init();
+    gui::ThemeManager::get();
 
     // Add "Interface" tab to edit theme settings
     {
         using namespace gui;
         auto tab = MenuTab::find("Interface");
+        std::vector<std::string> themeNames = {};
+        for (ThemeMeta theme : ThemeManager::get()->listAvailableThemes()) {
+            themeNames.push_back(theme.name);
+        }
+        if (!themeNames.empty()) {
+            auto themeCombo = tab->addCombo("Theme", "themeIndex", themeNames, 0);
+            themeCombo->callback([](int value) {
+                ThemeManager::get()->loadTheme(ThemeManager::get()->listAvailableThemes()[value].path);
+                ThemeManager::get()->setUIScale(config::getTemp<float>("uiScale"));
+            });
+        }
         tab->addInputFloat("UI Scale", "uiScale", 0.75f, 2.f, "x%.3f")
             ->callback([](float value) {
                 ThemeManager::get()->setUIScale(value);
@@ -149,12 +161,12 @@ $on_mod(Loaded) {
             fontCombo->setItems(ThemeManager::getFontNames());
         });
 
-        tab->addCombo("Layout Type", "layout", {"Tabbed", "Panel"}, 0)
+        tab->addCombo("Layout Type", "layout", {"Tabbed", "Panel", "Sidebar"}, 0)
             ->callback([](int value) {
                 ThemeManager::get()->setLayoutMode(static_cast<imgui::LayoutMode>(value));
             })->disableSaving();
 
-        tab->addCombo("Style", "theme", imgui::THEME_NAMES, 0)
+        tab->addCombo("Style", "style", imgui::THEME_NAMES, 0)
             ->callback([](int value) {
                 ThemeManager::get()->setComponentTheme(static_cast<imgui::ComponentTheme>(value));
             })->disableSaving();
@@ -167,6 +179,16 @@ $on_mod(Loaded) {
                 ->disableSaving();
         });
         blurToggle->disableSaving();
+
+        auto accentColor = tab->addColorComponent("Accent Color", "accent", true);
+        accentColor->callback([](const Color& color) {
+            ThemeManager::get()->applyAccentColor(color);
+        })->disableSaving();
+
+        auto backgroundColor = tab->addColorComponent("Background Color", "background", true);
+        backgroundColor->callback([](const Color& color) {
+            ThemeManager::get()->applyBackgroundColor(color);
+        })->disableSaving();
     }
 
     // Schedule hack updates

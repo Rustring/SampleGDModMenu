@@ -8,7 +8,7 @@
 namespace eclipse::gui::imgui::themes {
     bool Megahack::checkbox(const std::string &label, bool &value, const std::function<void()> &postDraw) const {
         auto tm = ThemeManager::get();
-        auto textColor = value ? tm->getButtonForegroundColor() : tm->getButtonDisabledForeground();
+        auto textColor = value ? tm->getCheckboxForegroundColor() : tm->getButtonDisabledForeground();
         auto scale = tm->getGlobalScale();
 
         ImGui::PushItemWidth(-1);
@@ -43,15 +43,15 @@ namespace eclipse::gui::imgui::themes {
                                         const std::function<void()> &postDraw,
                                         const std::string& popupId) const {
         auto tm = ThemeManager::get();
-        auto textColor = value ? tm->getButtonForegroundColor() : tm->getButtonDisabledForeground();
+        auto textColor = value ? tm->getCheckboxForegroundColor() : tm->getButtonDisabledForeground();
         auto scale = tm->getGlobalScale();
 
         ImGui::PushItemWidth(-1);
 
-        ImGui::PushStyleColor(ImGuiCol_Text, static_cast<ImVec4>(textColor));
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 2));
         ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.0f, 0.5f));
 
+        ImGui::PushStyleColor(ImGuiCol_Text, static_cast<ImVec4>(textColor));
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.07f, 0.07f, 0.07f, 0.5f));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.04f, 0.04f, 0.04f, 0.5f));

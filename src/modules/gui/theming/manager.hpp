@@ -20,6 +20,8 @@ void set##name(type const& value) { member = value; }
 
 namespace eclipse::gui {
 
+    constexpr auto THEME_SCHEMA_VERSION = 1;
+
     struct ThemeMeta {
         std::string name;
         std::filesystem::path path;
@@ -50,7 +52,7 @@ namespace eclipse::gui {
         void saveTheme() const;
 
         /// @brief Stores theme values to a json object
-        void applyValues(nlohmann::json& json) const;
+        void applyValues(nlohmann::json& json, bool flatten = false) const;
 
         /// @brief Imports a ZIP file with theme settings and fonts
         /// @return True if import was successful, or False in case an error happened
@@ -69,6 +71,21 @@ namespace eclipse::gui {
         /// @brief Returns a vector of all available built-in and custom themes
         static std::vector<ThemeMeta> listAvailableThemes();
 
+    /// === Meta-colors
+
+        /// @brief Calculates colors based on the accent color for:
+        /// m_disabledColor, m_titleBackgroundColor,
+        /// m_titleForegroundColor, m_checkboxCheckmarkColor,
+        /// m_buttonBackgroundColor, m_buttonForegroundColor,
+        /// m_buttonDisabledColor, m_buttonDisabledForeground,
+        /// m_buttonHoveredColor, m_buttonHoveredForeground,
+        /// m_buttonActivatedColor, m_buttonActiveForeground
+        void applyAccentColor(const Color& color);
+        /// @brief Calculates colors based on the background color for:
+        /// m_backgroundColor, m_frameBackground, m_borderColor,
+        /// m_foregroundColor, m_checkboxForegroundColor, m_checkboxBackgroundColor
+        void applyBackgroundColor(const Color& color);
+
     /// === Properties
 
         /// [Meta] Theme name
@@ -77,6 +94,8 @@ namespace eclipse::gui {
         CR_PROPERTY(std::string, m_themeDescription, ThemeDescription)
         /// [Meta] Theme author
         CR_PROPERTY(std::string, m_themeAuthor, ThemeAuthor)
+        /// [Meta] Schema version
+        CR_PROPERTY(int, m_schemaVersion, SchemaVersion)
 
         /// Current renderer engine
         PROPERTY_CS(RendererType, m_renderer, Renderer)
@@ -96,19 +115,35 @@ namespace eclipse::gui {
         CR_PROPERTY_CS(std::string, m_selectedFont, SelectedFont)
         void setSelectedFont(const std::string& value);
         void setSelectedFont(int index);
-        static std::vector<std::string> getFontNames() ;
+        static std::vector<std::string> getFontNames();
         /// [ImGui] Font size
         PROPERTY_CS(float, m_fontSize, FontSize)
         void setFontSize(float value);
 
         /// Frame padding
         PROPERTY(float, m_framePadding, FramePadding)
+        /// Frame rounding in px
+        PROPERTY(float, m_frameRounding, FrameRounding)
+
         /// Window margin (also used for stacking distance)
         PROPERTY(float, m_windowMargin, WindowMargin)
         /// Window rounding in px
         PROPERTY(float, m_windowRounding, WindowRounding)
-        /// Frame rounding in px
-        PROPERTY(float, m_frameRounding, FrameRounding)
+        /// Window padding in px
+        PROPERTY(float, m_windowPadding, WindowPadding)
+
+        /// Vertical spacing between components in px
+        PROPERTY(float, m_verticalSpacing, VerticalSpacing)
+        /// Horizontal spacing between components in px
+        PROPERTY(float, m_horizontalSpacing, HorizontalSpacing)
+        /// Vertical inner spacing between components in px
+        PROPERTY(float, m_verticalInnerSpacing, VerticalInnerSpacing)
+        /// Horizontal inner spacing between components in px
+        PROPERTY(float, m_horizontalInnerSpacing, HorizontalInnerSpacing)
+
+        /// Indent spacing in px
+        PROPERTY(float, m_indentSpacing, IndentSpacing)
+
         /// Border size in px
         PROPERTY(float, m_borderSize, BorderSize)
 

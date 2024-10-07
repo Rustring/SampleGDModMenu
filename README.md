@@ -24,9 +24,18 @@
     </a>
 </div>
 <br>
+<div>
+   <h1>Tabbed Style</h1>
+   <img src="screenshots/image1.png" alt="Tabbed Style">
+   <h1>Panel Style</h1>
+   <img src="screenshots/image2.png" alt="Panel Style">
+</div>
+<!--
+<div>
+   <h1>Credits</h1>
+</div>
+-->
 <div align="center">
-   <h1 align="center">NOTICE</h1>
-   <p align="center">
-      This mod menu is currently <b>under development</b>, and it is <b>NOT</b> in <b>beta</b> or meant to be used without issues. Any issues or reports will be dismissed, as there are currently no releases intended for anyone to download.
-   </p>
+    <h1 align="center">NOTICE</h1>
+    <p align="center">This README is still going under revisions! This may be updated more and more in the future.</p>
 </div>

@@ -72,16 +72,9 @@ namespace eclipse::recorder {
 
         command << " -i - ";
 
-        switch(m_renderSettings.m_codec) {
-            case None:
-                break;
-            case h264_nvenc:
-                command << "-c:v h264_nvenc ";
-                break;
-            case h264_amf:
-                command << "-c:v h264_amf ";
-                break;
-        }
+        std::array<std::string, 8> codecs {"", "-c:v h264_nvenc ", "-c:v h264_amf ", "-c:v hevc_nvenc ", "-c:v hevc_amf ", "-c:v libx264 ", "-c:v libx265 ", "-c:v libx264rgb "};
+
+        command << codecs[static_cast<int>(m_renderSettings.m_codec)];
 
         command << "-b:v " << m_renderSettings.m_bitrate << "M ";
 
@@ -103,10 +96,9 @@ namespace eclipse::recorder {
             m_lock.lock();
 
             if (m_frameHasData) {
-                const geode::ByteVector frame = m_currentFrame;
                 m_frameHasData = false;
+                m_ffmpegCLI->write(m_currentFrame.data(), m_currentFrame.size());
                 m_lock.unlock();
-                m_ffmpegCLI->write(frame.data(), frame.size());
             }
             else m_lock.unlock();
         }

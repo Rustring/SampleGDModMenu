@@ -1,6 +1,7 @@
 #include "theme.hpp"
 
 #include <imgui-cocos.hpp>
+#include <imgui_internal.h>
 #include <modules/config/config.hpp>
 #include <modules/gui/gui.hpp>
 #include <modules/gui/theming/manager.hpp>
@@ -9,7 +10,7 @@
 namespace eclipse::gui::imgui {
 
     std::vector<std::string> THEME_NAMES = {
-        "ImGui", "MegaHack"
+        "ImGui", "MegaHack", "MegaOverlay"
     };
 
     void Theme::visit(const std::shared_ptr<Component>& component) const {
@@ -26,7 +27,7 @@ namespace eclipse::gui::imgui {
             CASE(InputInt); CASE(FloatToggle);
             CASE(InputText); CASE(Color);
             CASE(Button); CASE(Keybind);
-            CASE(LabelSettings);
+            CASE(LabelSettings); CASE(FilesystemCombo);
         }
         ImGui::PopID();
 
@@ -95,18 +96,18 @@ namespace eclipse::gui::imgui {
         auto tm = ThemeManager::get();
         auto &style = ImGui::GetStyle();
 
-        ImGui::GetIO().FontGlobalScale = tm->getGlobalScale();
+        ImGui::GetIO().FontGlobalScale = tm->getGlobalScale() * INV_DEFAULT_SCALE;
 
         // Sizes
-        style.WindowPadding = ImVec2(4, 4);
+        style.WindowPadding = ImVec2(tm->getWindowPadding(), tm->getWindowPadding());
         style.WindowRounding = tm->getWindowRounding();
-        style.FramePadding = ImVec2(4, 2);
+        style.FramePadding = ImVec2(tm->getFramePadding(), tm->getFramePadding());
         style.FrameRounding = tm->getFrameRounding();
         style.PopupRounding = tm->getFrameRounding();
-        style.ItemSpacing = ImVec2(12, 2);
-        style.ItemInnerSpacing = ImVec2(8, 6);
+        style.ItemSpacing = ImVec2(tm->getHorizontalSpacing(), tm->getVerticalSpacing());
+        style.ItemInnerSpacing = ImVec2(tm->getHorizontalInnerSpacing(), tm->getVerticalInnerSpacing());
         style.WindowTitleAlign = ImVec2(0.5f, 0.5f);
-        style.IndentSpacing = 25.0f;
+        style.IndentSpacing = tm->getIndentSpacing();
         style.ScrollbarSize = 15.0f;
         style.ScrollbarRounding = 9.0f;
         style.GrabMinSize = 5.0f;
@@ -119,6 +120,10 @@ namespace eclipse::gui::imgui {
         // Base colors
         auto& colors = style.Colors;
         colors[ImGuiCol_WindowBg] = tm->getBackgroundColor();
+        colors[ImGuiCol_PopupBg] = tm->getBackgroundColor();
+        colors[ImGuiCol_Button] = tm->getButtonBackgroundColor();
+        colors[ImGuiCol_ButtonHovered] = tm->getButtonHoveredBackground();
+        colors[ImGuiCol_ButtonActive] = tm->getButtonHoveredBackground();
         colors[ImGuiCol_Border] = tm->getBorderColor();
         colors[ImGuiCol_Text] = tm->getForegroundColor();
         colors[ImGuiCol_TitleBg] = tm->getTitleBackgroundColor();
@@ -136,6 +141,7 @@ namespace eclipse::gui::imgui {
         ImGui::PushStyleColor(ImGuiCol_Text, static_cast<ImVec4>(tm->getTitleForegroundColor()));
         ImGui::PushFont(ImGuiRenderer::get()->getFontManager().getFont().get());
         bool open = ImGui::Begin(title.c_str(), nullptr, flags);
+        ImGui::PopStyleColor();
         return open;
     }
 
@@ -206,6 +212,30 @@ namespace eclipse::gui::imgui {
                 }
 
                 if (is_selected) ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+        ImGui::PopItemWidth();
+    }
+
+    void Theme::visitFilesystemCombo(const std::shared_ptr<FilesystemComboComponent>& combo) const {
+        auto& items = combo->getItems();
+        std::filesystem::path value = combo->getValue();
+        auto title = combo->getTitle();
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * (title.empty() ? .9f : .5f));
+        if (ImGui::BeginCombo(title.c_str(), value.empty() ? "None" : value.filename().stem().string().c_str())) {
+            ImGui::InputText("##search", combo->getSearchBuffer());
+            for (int n = 0; n < items.size(); n++) {
+                std::string option = items[n].filename().stem().string();
+                if(option.find(*combo->getSearchBuffer()) != std::string::npos) {
+                    const bool is_selected = (value == items[n]);
+                    if (ImGui::Selectable(option.c_str(), is_selected)) {
+                        combo->setValue(n);
+                        combo->triggerCallback(n);
+                    }
+
+                    if (is_selected) ImGui::SetItemDefaultFocus();
+                }
             }
             ImGui::EndCombo();
         }
@@ -478,14 +508,7 @@ namespace eclipse::gui::imgui {
                                      const std::string& popupId) const {
         auto tm = ThemeManager::get();
 
-        ImGui::PushStyleColor(ImGuiCol_Text, static_cast<ImVec4>(tm->getCheckboxForegroundColor()));
-        ImGui::PushStyleColor(ImGuiCol_CheckMark, static_cast<ImVec4>(tm->getCheckboxCheckmarkColor()));
-        ImGui::PushStyleColor(ImGuiCol_FrameBg, static_cast<ImVec4>(tm->getCheckboxBackgroundColor()));
-
-        bool result = ImGui::Checkbox(label.c_str(), &value);
-        postDraw();
-
-        ImGui::PopStyleColor(3);
+        bool result = this->checkbox(label, value, postDraw);
 
         ImGui::PushItemWidth(-1);
         auto availWidth = ImGui::GetContentRegionAvail().x;

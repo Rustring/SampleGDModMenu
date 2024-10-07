@@ -1,11 +1,11 @@
-#include "panel.hpp"
+#include "sidebar.hpp"
 #include <modules/gui/imgui/imgui.hpp>
 #include <modules/gui/gui.hpp>
 #include <modules/gui/theming/manager.hpp>
 
 namespace eclipse::gui::imgui {
 
-    void PanelLayout::init() {
+    void SidebarLayout::init() {
         auto& tabs = Engine::get()->getTabs();
         for (auto& tab : tabs) {
             m_tabs.emplace_back(tab->getTitle(), [tab] {
@@ -16,20 +16,20 @@ namespace eclipse::gui::imgui {
         }
     }
 
-    void PanelLayout::recalculateSize() {
+    void SidebarLayout::recalculateSize(bool first) {
         auto screenSize = ImGui::GetIO().DisplaySize;
 
-        auto initialSize = ImVec2(800, 600);
+        auto initialSize = ImVec2(first ? 150 : 250, 700);
         auto xRatio = screenSize.x / 1280;
         auto yRatio = screenSize.y / 720;
         auto ratio = std::min(xRatio, yRatio);
         auto scaledSize = ImVec2(initialSize.x * ratio, initialSize.y * ratio);
 
         ImGui::SetWindowSize(scaledSize);
-        ImGui::SetWindowPos(ImVec2(screenSize.x / 2 - scaledSize.x / 2, screenSize.y / 2 - scaledSize.y / 2));
+        ImGui::SetWindowPos(ImVec2(first ? 10 : (screenSize.x - scaledSize.x - 10), screenSize.y / 2 - scaledSize.y / 2));
     }
 
-    void PanelLayout::draw() {
+    void SidebarLayout::draw() {
         if (!Engine::get()->isToggled()) return;
 
         auto scale = ThemeManager::get()->getGlobalScale();
@@ -37,14 +37,10 @@ namespace eclipse::gui::imgui {
         style->WindowRounding = 15.f * scale;
 
         // window beginning
-
-        ImGui::Begin(" ", nullptr,
+        ImGui::Begin("window1", nullptr,
                      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoResize |
                      ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove);
-        recalculateSize();
-
-        ImGui::Columns(2);
-        ImGui::SetColumnOffset(1, 183 * scale);
+        recalculateSize(true);
 
         style->Colors[ImGuiCol_WindowShadow] = ImVec4(0.f, 0.f, 0.f, 1.f);
         style->WindowShadowSize = 50.f;
@@ -55,7 +51,7 @@ namespace eclipse::gui::imgui {
             ImGui::BeginChild("Logo", ImVec2(188 * scale, 50 * scale));
             ImGui::SameLine();
 
-            ImGui::SetCursorPosY(11 * scale);
+            ImGui::SetCursorPosY(11);
             ImGui::TextUnformatted("Eclipse Menu");
 
             ImGui::EndChild();
@@ -85,8 +81,9 @@ namespace eclipse::gui::imgui {
             if (ImGui::Button(it.c_str(), ImVec2(160 * scale, 40 * scale))) {
                 m_selectedTab = i;
             }
-            ImGui::PopStyleColor(2);
             ImGui::PopStyleVar();
+            ImGui::PopStyleColor();
+            ImGui::PopStyleColor();
         }
 
         ImGui::PopStyleVar();
@@ -96,25 +93,34 @@ namespace eclipse::gui::imgui {
         // user thing
 
         ImGui::Dummy(ImVec2(0.0f, ImGui::GetContentRegionAvail().y - 80 * scale - style->ItemSpacing.y));
-        ImGui::BeginChild("User", ImVec2(188 * scale, 80 * scale));
+        ImGui::BeginChild("User", ImVec2(188, 80));
 
         ImGui::EndChild();
 
-        // right column
+        ImGui::End();
 
-        ImGui::NextColumn();
+        // right window
+
+        ImGui::Begin("window2", nullptr,
+                     ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoResize |
+                     ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove);
+        recalculateSize(false);
+
         ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0, 0, 0, 0));
 		ImGui::BeginChild("modules-wrapper", ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y), false);
 		ImGui::PopStyleColor();
 
-        m_tabs[m_selectedTab].draw();
+        // Render tabs
+        for (int i = 0; i < m_tabs.size(); i++) {
+            if (m_selectedTab == i) m_tabs[i].draw();
+        }
 
         ImGui::EndChild();
 
         ImGui::End();
     }
 
-    void PanelLayout::toggle(bool state) {
+    void SidebarLayout::toggle(bool state) {
 
     }
 }

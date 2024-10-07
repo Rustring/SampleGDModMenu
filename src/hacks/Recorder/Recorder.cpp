@@ -17,6 +17,7 @@ namespace eclipse::hacks::Recorder {
     bool visiting = false;
     bool inShaderLayer = false;
     bool levelDone = false;
+    bool popupShown = false;
 
     float totalTime = 0.f;
     float afterEndTimer = 0.f;
@@ -25,11 +26,21 @@ namespace eclipse::hacks::Recorder {
     double lastFrameTime = 0.;
 
     intptr_t glViewportAddress = 0;
+
+    void endPopup() {
+        Popup::create("Info", "Recording finished!", "OK", "Open folder", [](bool result) {
+            if(result)
+                return;
+
+            geode::utils::file::openFolder(geode::Mod::get()->getSaveDir() / "renders");
+        });
+    }
     
     void glViewportHook(GLint a, GLint b, GLsizei c, GLsizei d) {
         if (visiting && s_recorder.isRecording() && inShaderLayer) {
+            ImVec2 displaySize = ImGui::GetIO().DisplaySize;
             //shaderlayer resolutions for each quality mode
-            if (c != 2608 && d != 2608 && c != 1304 && d != 1304 && c != 652 && d != 652) {
+            if (c != 2608 && d != 2608 && c != 1304 && d != 1304 && c != 652 && d != 652 && c == (int)displaySize.x && d == (int)displaySize.y) {
                 c = config::get<int>("recorder.resolution.x", 1920);
                 d = config::get<int>("recorder.resolution.y", 1080);
             }
@@ -50,6 +61,7 @@ namespace eclipse::hacks::Recorder {
 
         visiting = false;
         levelDone = false;
+        popupShown = false;
         totalTime = 0.f;
         extraTime = 0.;
         lastFrameTime = 0.;
@@ -94,6 +106,7 @@ namespace eclipse::hacks::Recorder {
         }
 
         levelDone = false;
+        popupShown = false;
         afterEndTimer = 0.f;
 
         if (PlayLayer::get()->getChildByID("EndLevelLayer"))
@@ -127,6 +140,10 @@ namespace eclipse::hacks::Recorder {
             config::setIfEmpty("recorder.bitrate", 30.f);
             config::setIfEmpty("recorder.resolution.x", 1920.f);
             config::setIfEmpty("recorder.resolution.y", 1080.f);
+            config::setIfEmpty("recorder.audio", 2);
+            config::setIfEmpty("recorder.codec", 0);
+
+            tab->addCombo("Audio mode", "recorder.audio", {"Don't record", "Ask first", "Always record"}, 0);
 
             tab->addInputFloat("Framerate", "recorder.fps", 1.f, 360.f, "%.0f FPS");
             tab->addInputFloat("Endscreen Duration", "recorder.endscreen", 0.f, 30.f, "%.2fs.");
@@ -134,30 +151,32 @@ namespace eclipse::hacks::Recorder {
             tab->addInputInt("Resolution X", "recorder.resolution.x", 1, 15360);
             tab->addInputInt("Resolution Y", "recorder.resolution.y", 1, 8640);
 
-            config::setIfEmpty("recorder.codec", 0);
+            config::setIfEmpty("recorder.codec", static_cast<int>(recorder::Codec::None));
             config::setIfEmpty("recorder.extraargs", "-pix_fmt rgb0 -qp 16 -rc-lookahead 16 -preset slow");
             config::setIfEmpty("recorder.videoargs", "colorspace=all=bt709:iall=bt470bg:fast=1");
             tab->addInputText("Args", "recorder.args");
             tab->addInputText("Extra Args", "recorder.extraargs");
             tab->addInputText("Video Args", "recorder.videoargs");
+
+            tab->addCombo("Codec", "recorder.codec", {"None", "h264_nvenc", "h264_amf", "hevc_nvenc", "hevc_amf", "libx264", "libx265", "libx264rgb"}, 8);
             
             tab->addLabel("Presets");
             tab->addButton("CPU")->callback([] {
-                config::set<int>("recorder.codec", 0);
+                config::set<int>("recorder.codec", static_cast<int>(recorder::Codec::None));
                 config::set<std::string>("recorder.args", "");
                 config::set<std::string>("recorder.extraargs", "-pix_fmt rgb0 -qp 16 -rc-lookahead 16 -preset slow");
                 config::set<std::string>("recorder.videoargs", "colorspace=all=bt709:iall=bt470bg:fast=1");
             });
 
             tab->addButton("NVIDIA")->callback([] {
-                config::set<int>("recorder.codec", 1);
+                config::set<int>("recorder.codec", static_cast<int>(recorder::Codec::h264_nvenc));
                 config::set<std::string>("recorder.args", "-hwaccel cuda -hwaccel_output_format cuda");
                 config::set<std::string>("recorder.extraargs", "-pix_fmt rgb0 -qp 16 -rc-lookahead 16 -preset slow");
                 config::set<std::string>("recorder.videoargs", "colorspace=all=bt709:iall=bt470bg:fast=1");
             });
 
             tab->addButton("AMD")->callback([] {
-                config::set<int>("recorder.codec", 2);
+                config::set<int>("recorder.codec", static_cast<int>(recorder::Codec::h264_amf));
                 config::set<std::string>("recorder.args", "");
                 config::set<std::string>("recorder.extraargs", "-pix_fmt rgb0 -qp 16 -rc-lookahead 16 -preset slow");
                 config::set<std::string>("recorder.videoargs", "colorspace=all=bt709:iall=bt470bg:fast=1");
@@ -228,10 +247,33 @@ namespace eclipse::hacks::Recorder {
 
             if (levelDone) {
                 if (afterEndTimer > endscreen) {
-                    if (s_recorder.isRecording())
-                        startAudio();
-                    else if (s_recorder.isRecordingAudio())
+                    if (s_recorder.isRecording() && !popupShown) {
+                        switch(config::get<int>("recorder.audio", 2)) {
+                            case 1:
+                                popupShown = true;
+                                Popup::create("Audio", "Record audio?", "Yes", "No", [&](bool result) {
+                                    if(result) {
+                                        startAudio();
+                                        return;
+                                    }
+                                    stop();
+                                    endPopup();
+                                });
+                                break;
+                            case 2:
+                                startAudio();
+                                break;
+                            default:
+                            case 0:
+                                stop();
+                                endPopup();
+                                break;
+                        }
+                    }
+                    else if (s_recorder.isRecordingAudio()) {
                         stopAudio();
+                        endPopup();
+                    }
                     
                     return GJBaseGameLayer::update(dt);
                 }
@@ -279,6 +321,7 @@ namespace eclipse::hacks::Recorder {
 
         void resetLevel() {
             levelDone = false;
+            popupShown = false;
             PlayLayer::resetLevel();
         }
 
